@@ -4,7 +4,7 @@ on:
   issue_comment:
     types: [created]
   issues:
-    types: [opened, assigned]
+    types: [opened]
 
 permissions:
   contents: write
@@ -22,8 +22,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -32,9 +30,39 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
       - name: Run Claude Code
-        uses: anthropics/claude-code-action@beta
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          trigger_phrase: "@claude"
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_OAUTH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_BODY="${{ github.event.issue.body }}"
+
+          COMMENT_BODY=""
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            COMMENT_BODY="${{ github.event.comment.body }}"
+          fi
+
+          PROMPT="You are working on a Spring Boot Java 21 project.
+
+          GitHub Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}
+
+          Issue description:
+          ${ISSUE_BODY}
+
+          ${COMMENT_BODY:+Additional instruction: $COMMENT_BODY}
+
+          Please implement the required changes:
+          1. Write the code as described in the issue
+          2. Add unit tests
+          3. Make sure mvn test passes
+          4. Create a new git branch named feature/issue-${ISSUE_NUMBER}
+          5. Commit and push the branch
+          6. Open a pull request that references issue #${ISSUE_NUMBER}"
+
+          claude --dangerously-skip-permissions -p "$PROMPT"
