@@ -33,6 +33,11 @@ jobs:
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Configure git
+        run: |
+          git config --global user.name "Claude Code Bot"
+          git config --global user.email "claude-bot@users.noreply.github.com"
+
       - name: Run Claude Code
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_OAUTH_TOKEN }}
@@ -60,13 +65,16 @@ jobs:
 
           cat >> /tmp/prompt.txt << 'PROMPT_EOF'
 
-          Please implement the required changes:
-          1. Write the code as described in the issue
+          Please implement the required changes by running these exact steps:
+          1. Write all the code as described in the issue
           2. Add unit tests
-          3. Make sure mvn test passes
-          4. Create a new git branch named feature/issue-ISSUE_NUM
-          5. Commit and push the branch
-          6. Open a pull request that references the issue
+          3. Run: mvn test  (make sure it passes)
+          4. Run: git checkout -b feature/issue-ISSUE_NUM
+          5. Run: git add -A && git commit -m "feat: implement issue #ISSUE_NUM"
+          6. Run: git push origin feature/issue-ISSUE_NUM
+          7. Run: gh pr create --title "Implement issue #ISSUE_NUM" --body "Closes #ISSUE_NUM" --base main --head feature/issue-ISSUE_NUM
+
+          Step 7 is mandatory — the PR must be created automatically using the gh CLI.
           PROMPT_EOF
 
           sed -i "s/ISSUE_NUM/${ISSUE_NUMBER}/g" /tmp/prompt.txt
