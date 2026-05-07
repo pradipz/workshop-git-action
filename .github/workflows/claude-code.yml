@@ -38,31 +38,37 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_OAUTH_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
-          ISSUE_TITLE="${{ github.event.issue.title }}"
-          ISSUE_BODY="${{ github.event.issue.body }}"
+          cat > /tmp/prompt.txt << 'PROMPT_EOF'
+          You are working on a Spring Boot Java 21 project.
+          PROMPT_EOF
 
-          COMMENT_BODY=""
-          if [ "${{ github.event_name }}" = "issue_comment" ]; then
-            COMMENT_BODY="${{ github.event.comment.body }}"
+          echo "GitHub Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}" >> /tmp/prompt.txt
+          echo "" >> /tmp/prompt.txt
+          echo "Issue description:" >> /tmp/prompt.txt
+          echo "${ISSUE_BODY}" >> /tmp/prompt.txt
+
+          if [ "$EVENT_NAME" = "issue_comment" ] && [ -n "$COMMENT_BODY" ]; then
+            echo "" >> /tmp/prompt.txt
+            echo "Additional instruction: ${COMMENT_BODY}" >> /tmp/prompt.txt
           fi
 
-          PROMPT="You are working on a Spring Boot Java 21 project.
-
-          GitHub Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}
-
-          Issue description:
-          ${ISSUE_BODY}
-
-          ${COMMENT_BODY:+Additional instruction: $COMMENT_BODY}
+          cat >> /tmp/prompt.txt << 'PROMPT_EOF'
 
           Please implement the required changes:
           1. Write the code as described in the issue
           2. Add unit tests
           3. Make sure mvn test passes
-          4. Create a new git branch named feature/issue-${ISSUE_NUMBER}
+          4. Create a new git branch named feature/issue-ISSUE_NUM
           5. Commit and push the branch
-          6. Open a pull request that references issue #${ISSUE_NUMBER}"
+          6. Open a pull request that references the issue
+          PROMPT_EOF
 
-          claude --dangerously-skip-permissions -p "$PROMPT"
+          sed -i "s/ISSUE_NUM/${ISSUE_NUMBER}/g" /tmp/prompt.txt
+
+          claude --dangerously-skip-permissions -p "$(cat /tmp/prompt.txt)"
