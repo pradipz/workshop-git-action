@@ -18,14 +18,15 @@ class UserControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    void getUsersReturnsListOfUsers() throws Exception {
+    void getUsersReturnsList() throws Exception {
         mockMvc.perform(get("/api/v1/users"))
             .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(2))
             .andExpect(jsonPath("$[0].id").value(1))
-            .andExpect(jsonPath("$[0].name").value("Alice Smith"))
+            .andExpect(jsonPath("$[0].name").value("Alice"))
             .andExpect(jsonPath("$[0].email").value("alice@example.com"))
             .andExpect(jsonPath("$[1].id").value(2))
-            .andExpect(jsonPath("$[1].name").value("Bob Jones"));
+            .andExpect(jsonPath("$[1].name").value("Bob"));
     }
 
     @Test
@@ -33,12 +34,12 @@ class UserControllerTest {
         mockMvc.perform(get("/api/v1/users/1"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(1))
-            .andExpect(jsonPath("$.name").value("Alice Smith"))
+            .andExpect(jsonPath("$.name").value("Alice"))
             .andExpect(jsonPath("$.email").value("alice@example.com"));
     }
 
     @Test
-    void getUserByIdReturnsNotFoundForUnknownId() throws Exception {
+    void getUserByIdNotFoundReturns404() throws Exception {
         mockMvc.perform(get("/api/v1/users/999"))
             .andExpect(status().isNotFound());
     }
@@ -47,11 +48,11 @@ class UserControllerTest {
     void createUserReturnsCreatedUser() throws Exception {
         mockMvc.perform(post("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\": \"Charlie Brown\", \"email\": \"charlie@example.com\"}"))
+                .content("{\"name\": \"Charlie\", \"email\": \"charlie@example.com\"}"))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.name").value("Charlie Brown"))
+            .andExpect(jsonPath("$.id").value(3))
+            .andExpect(jsonPath("$.name").value("Charlie"))
             .andExpect(jsonPath("$.email").value("charlie@example.com"))
-            .andExpect(jsonPath("$.id").exists())
             .andExpect(jsonPath("$.createdAt").exists());
     }
 }
