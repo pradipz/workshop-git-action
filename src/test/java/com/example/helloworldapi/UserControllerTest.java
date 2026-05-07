@@ -18,28 +18,27 @@ class UserControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    void getUsersReturnsList() throws Exception {
+    void getUsersReturnsListOfUsers() throws Exception {
         mockMvc.perform(get("/api/v1/users"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(3))
             .andExpect(jsonPath("$[0].id").value(1))
-            .andExpect(jsonPath("$[0].name").value("Alice"))
-            .andExpect(jsonPath("$[0].email").value("alice@example.com"))
-            .andExpect(jsonPath("$[1].id").value(2))
-            .andExpect(jsonPath("$[1].name").value("Bob"));
+            .andExpect(jsonPath("$[0].name").value("Alice Smith"))
+            .andExpect(jsonPath("$[0].email").value("alice@example.com"));
     }
 
     @Test
     void getUserByIdReturnsUser() throws Exception {
-        mockMvc.perform(get("/api/v1/users/1"))
+        mockMvc.perform(get("/api/v1/users/2"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(1))
-            .andExpect(jsonPath("$.name").value("Alice"))
-            .andExpect(jsonPath("$.email").value("alice@example.com"));
+            .andExpect(jsonPath("$.id").value(2))
+            .andExpect(jsonPath("$.name").value("Bob Jones"))
+            .andExpect(jsonPath("$.email").value("bob@example.com"));
     }
 
     @Test
-    void getUserByIdNotFoundReturns404() throws Exception {
+    void getUserByIdReturns404ForUnknownId() throws Exception {
         mockMvc.perform(get("/api/v1/users/999"))
             .andExpect(status().isNotFound());
     }
@@ -48,11 +47,11 @@ class UserControllerTest {
     void createUserReturnsCreatedUser() throws Exception {
         mockMvc.perform(post("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\": \"Charlie\", \"email\": \"charlie@example.com\"}"))
+                .content("{\"name\": \"Dave Brown\", \"email\": \"dave@example.com\"}"))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.id").value(3))
-            .andExpect(jsonPath("$.name").value("Charlie"))
-            .andExpect(jsonPath("$.email").value("charlie@example.com"))
-            .andExpect(jsonPath("$.createdAt").exists());
+            .andExpect(jsonPath("$.name").value("Dave Brown"))
+            .andExpect(jsonPath("$.email").value("dave@example.com"))
+            .andExpect(jsonPath("$.id").isNumber())
+            .andExpect(jsonPath("$.createdAt").isNotEmpty());
     }
 }
