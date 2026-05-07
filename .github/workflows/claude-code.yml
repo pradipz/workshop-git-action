@@ -15,7 +15,7 @@ jobs:
   claude:
     name: Run Claude Code
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      github.event_name == 'issue_comment' ||
       (github.event_name == 'issues' && github.event.action == 'opened')
     runs-on: ubuntu-latest
 
